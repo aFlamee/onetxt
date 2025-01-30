@@ -4,60 +4,49 @@ import subprocess
 import os
 import sys
 
-# --------------------
-# PRESETS
-# --------------------
-PRESET_IGNORES = {
-    "NextJs": [
-        "node_modules", ".next", "package-lock.json", "yarn.lock",
-        "pnpm-lock.yaml", "bun.lockb"
-    ],
-    "SvelteKit": [
-        "node_modules", ".svelte-kit", "package-lock.json", "yarn.lock",
-        "pnpm-lock.yaml", "bun.lockb"
-    ],
-    "React": [
-        "node_modules", "build", "package-lock.json", "yarn.lock",
-        "pnpm-lock.yaml", "bun.lockb"
-    ],
-    "Ruby on Rails": [
-        "tmp", "log", "vendor", "coverage", "node_modules",
-        "Gemfile.lock", "package-lock.json", "yarn.lock",
-        "pnpm-lock.yaml", "bun.lockb"
-    ],
-    "Angular": [
-        "node_modules", "dist", ".angular",
-        "package-lock.json", "yarn.lock",
-        "pnpm-lock.yaml", "bun.lockb"
-    ],
-    "No Preset": []
-}
+from repo2txt import run_repo2txt
+from utils.presets import PRESET_IGNORES, DEFAULT_IGNORE_KEYWORDS
 
-DEFAULT_IGNORE_KEYWORDS = [
-    "tmp", "cache", "bin", "build", "dist", "out", "logs",
-    "node_modules", "venv", ".venv", "__pycache__", ".idea", ".vscode"
-]
+root = None
+style = None
+path_var = None
+custom_ignore_var = None
+preset_var = None
+preset_info_label = None
+status_label = None
+btn_clipboard = None
+btn_vscode = None
+open_button = None
+theme_var = None
+entry_ignore = None
+feedback_bar = None
+PLACEHOLDER_IGNORE = "E.g. .env, secrets"
+default_ignore_vars = {}
 
+def set_status(msg):
+    status_label.config(text=msg)
 
-def show_executed_feedback():
-    global feedback_bar
-    status_label.config(text="Script executed.")
-    feedback_bar["value"] = 0
-    feedback_bar.pack(pady=(0, 10))
-    animate_feedback_bar(0)
+def set_buttons_state(state):
+    btn_clipboard.config(state=state)
+    btn_vscode.config(state=state)
+    open_button.config(state=state)
+
+def hide_feedback():
+    status_label.config(text="")
+    feedback_bar.pack_forget()
 
 def animate_feedback_bar(value):
-    global feedback_bar
     if value <= 100:
         feedback_bar["value"] = value
         root.after(30, animate_feedback_bar, value + 1)
     else:
         root.after(1000, hide_feedback)
 
-def hide_feedback():
-    global feedback_bar
-    status_label.config(text="")
-    feedback_bar.pack_forget()
+def show_executed_feedback():
+    set_status("Script executed.")
+    feedback_bar["value"] = 0
+    feedback_bar.pack(pady=(0, 10))
+    animate_feedback_bar(0)
 
 def select_directory():
     folder = filedialog.askdirectory(initialdir=os.path.expanduser("~"))
@@ -71,95 +60,88 @@ def update_preset_label(*_):
     preset_info_label.config(text=text)
 
 def run_script():
-    btn_clipboard.config(state=tk.DISABLED)
-    btn_vscode.config(state=tk.DISABLED)
-    open_button.config(state=tk.DISABLED)
-
+    set_buttons_state(tk.DISABLED)
     p = path_var.get().strip()
     txt = custom_ignore_var.get().strip()
     user_ignores = []
-
     if txt and txt != PLACEHOLDER_IGNORE:
         user_ignores = [x.strip() for x in txt.split(',') if x.strip()]
-
     user_ignores += PRESET_IGNORES.get(preset_var.get(), [])
-
-    # Alle angehakten Default-Keywords hinzufügen
     for kw, var in default_ignore_vars.items():
         if var.get():
             user_ignores.append(kw)
-
     if p:
         try:
-            target = os.path.join(os.path.dirname(__file__), "repo2txt.py")
-            subprocess.run([sys.executable, target, p, ",".join(user_ignores)], check=True)
+            run_repo2txt(p, user_ignores)
             show_executed_feedback()
-
-            btn_clipboard.config(state=tk.NORMAL)
-            btn_vscode.config(state=tk.NORMAL)
-            open_button.config(state=tk.NORMAL)
+            set_buttons_state(tk.NORMAL)
         except subprocess.CalledProcessError as e:
-            status_label.config(text=f"Error: {e}")
+            set_status(f"Error: {e}")
     else:
-        status_label.config(text="Please select a directory first.")
+        set_status("Please select a directory first.")
 
-def open_output_file():
+def get_response_file():
     p = path_var.get().strip()
     if not p:
-        status_label.config(text="No directory selected.")
-        return
-    out_file = os.path.join(p, "response.txt")
-    if os.path.exists(out_file):
-        if sys.platform.startswith("darwin"):
-            subprocess.run(["open", out_file])
-        elif os.name == "nt":
-            os.startfile(out_file)  # type: ignore
-        else:
-            subprocess.run(["xdg-open", out_file])
-    else:
-        status_label.config(text="No 'response.txt' found.")
-
-def open_response_in_vscode():
-    p = path_var.get().strip()
-    if not p:
-        status_label.config(text="No directory selected.")
-        return
+        set_status("No directory selected.")
+        return None, None
     out_file = os.path.join(p, "response.txt")
     if not os.path.exists(out_file):
-        status_label.config(text="No 'response.txt' found.")
+        set_status("No 'response.txt' found.")
+        return p, None
+    return p, out_file
+
+def open_output_file():
+    p, out_file = get_response_file()
+    if not out_file:
+        return
+    if sys.platform.startswith("darwin"):
+        subprocess.run(["open", out_file])
+    elif os.name == "nt":
+        os.startfile(out_file)
+    else:
+        subprocess.run(["xdg-open", out_file])
+
+def open_response_in_vscode():
+    p, out_file = get_response_file()
+    if not out_file:
         return
     try:
         subprocess.run(["code", out_file], check=True)
     except FileNotFoundError:
-        status_label.config(text="VSCode not found or 'code' command not in PATH.")
+        set_status("VSCode not found or 'code' command not in PATH.")
     except subprocess.CalledProcessError as e:
-        status_label.config(text=f"Error opening in VSCode: {e}")
+        set_status(f"Error opening in VSCode: {e}")
 
+def copy_response_to_clipboard():
+    p, out_file = get_response_file()
+    if not out_file:
+        return
+    try:
+        with open(out_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        root.clipboard_clear()
+        root.clipboard_append(content)
+        set_status("response.txt content copied to clipboard.")
+    except Exception as e:
+        set_status(f"Error copying file content: {e}")
 
 def create_ignore_checkbuttons(parent_frame):
-    global default_ignore_vars
-    default_ignore_vars = {}
-
     frame = ttk.Frame(parent_frame)
     frame.pack(fill="x", pady=(10, 15), anchor="w")
-
-    cols = 5  # Zwei Spalten für eine breitere Darstellung
-    for index, kw in enumerate(DEFAULT_IGNORE_KEYWORDS):
+    cols = 5
+    all_keywords = DEFAULT_IGNORE_KEYWORDS
+    for index, kw in enumerate(all_keywords):
         var = tk.BooleanVar(value=True)
         default_ignore_vars[kw] = var
-
         check_frame = ttk.Frame(frame, padding=5, relief="ridge")
         check_frame.grid(row=index // cols, column=index % cols, padx=10, pady=5, sticky="w")
-
         cbtn = ttk.Checkbutton(check_frame, text=kw, variable=var, style="Modern.TCheckbutton")
         cbtn.pack(side="left", padx=5, pady=2)
-    
     return frame
 
 def apply_styles():
-    style = ttk.Style()
     style.theme_use("clam")
-    
     style.configure("Modern.TCheckbutton",
                     font=("Helvetica", 10, "bold"),
                     background="#2e2e2e", foreground="white",
@@ -168,33 +150,12 @@ def apply_styles():
               background=[("active", "#555555"), ("!disabled", "#444444")],
               foreground=[("active", "#ffffff"), ("!disabled", "#dddddd")])
 
-def copy_response_to_clipboard():
-    p = path_var.get().strip()
-    if not p:
-        status_label.config(text="No directory selected.")
-        return
-    out_file = os.path.join(p, "response.txt")
-    if not os.path.exists(out_file):
-        status_label.config(text="No 'response.txt' found.")
-        return
-    try:
-        with open(out_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        root.clipboard_clear()
-        root.clipboard_append(content)
-        status_label.config(text="response.txt content copied to clipboard.")
-    except Exception as e:
-        status_label.config(text=f"Error copying file content: {e}")
-
 def apply_dark_theme():
     style.theme_use("clam")
     root.configure(bg="#1c1c1c")
-
-    # Checkbutton-Style
     style.configure("Custom.TCheckbutton",
                     background="#1c1c1c", foreground="white",
                     borderwidth=0, highlightthickness=0, relief="flat")
-
     style.configure("TLabel",
                     background="#1c1c1c", foreground="white",
                     borderwidth=0, relief="flat")
@@ -228,25 +189,21 @@ def apply_dark_theme():
     style.map("TCombobox",
               foreground=[("readonly", "white"), ("disabled", "#888")],
               background=[("readonly", "#3a3a3a"), ("disabled", "#3a3a3a")])
-
     style.configure("Custom.TRadiobutton",
                     background="#1c1c1c", foreground="white",
                     borderwidth=0, highlightthickness=0, relief="flat")
     style.map("Custom.TRadiobutton",
               background=[("active", "#3a3a3a")],
               foreground=[("active", "white")])
-
     status_label.config(foreground="yellow")
     preset_info_label.config(foreground="yellow")
 
 def apply_light_theme():
     style.theme_use("clam")
     root.configure(bg="#f2f2f2")
-
     style.configure("Custom.TCheckbutton",
                     background="#f2f2f2", foreground="black",
                     borderwidth=0, highlightthickness=0, relief="flat")
-
     style.configure("TLabel",
                     background="#f2f2f2", foreground="black",
                     borderwidth=0, relief="flat")
@@ -280,14 +237,12 @@ def apply_light_theme():
     style.map("TCombobox",
               foreground=[("readonly", "black"), ("disabled", "#666")],
               background=[("readonly", "#f2f2f2"), ("disabled", "#f2f2f2")])
-
     style.configure("Custom.TRadiobutton",
                     background="#f2f2f2", foreground="black",
                     borderwidth=0, highlightthickness=0, relief="flat")
     style.map("Custom.TRadiobutton",
               background=[("active", "#cccccc")],
               foreground=[("active", "black")])
-
     status_label.config(foreground="blue")
     preset_info_label.config(foreground="blue")
 
@@ -310,18 +265,16 @@ def on_ignore_focus_out(_):
         entry_ignore.insert(0, PLACEHOLDER_IGNORE)
         entry_ignore.config(foreground="#888")
 
-def main():
+def run_ui():
     global root, style
     global path_var, custom_ignore_var, preset_var
     global preset_info_label, status_label
     global btn_clipboard, btn_vscode, open_button
     global theme_var, entry_ignore
     global feedback_bar
-    global PLACEHOLDER_IGNORE
-    global default_ignore_vars
 
     root = tk.Tk()
-    root.title("aFlamee - OneTXT")
+    root.title("aFlamee - rep2txt - Repository -> text")
     root.geometry("750x550")
     root.resizable(False, False)
 
@@ -330,7 +283,7 @@ def main():
 
     heading_frame = ttk.Frame(root, padding="10")
     heading_frame.pack(fill="x")
-    lbl_heading = ttk.Label(heading_frame, text="Welcome to OneTXT!", font=("Helvetica", 14, "bold"))
+    lbl_heading = ttk.Label(heading_frame, text="Welcome to Rep2txt!", font=("Helvetica", 14, "bold"))
     lbl_heading.pack(side="left")
 
     theme_var = tk.StringVar(value="Dark")
@@ -360,20 +313,9 @@ def main():
     b_browse = ttk.Button(dir_frame, text="Browse", command=select_directory)
     b_browse.pack(side="left", padx=5)
 
-    # Schönes LabelFrame für die Default-Ignores
-    default_box = ttk.LabelFrame(main_frame, text="Default Ignores (Check/Uncheck as you like)")
-    default_box.pack(fill="x", pady=(5, 10), anchor="w")
-
-    # Dictionary: Keyword -> BooleanVar
-    default_ignore_vars = {}
-    col_count = 0
-    row_count = 0
-    max_per_col = 5  # 5 Einträge pro Spalte
-
-    # LabelFrame für die Default-Ignores mit modernisiertem Look
     default_box = ttk.LabelFrame(main_frame, text="Default Ignores (Check/Uncheck as you like)", padding=10)
     default_box.pack(fill="x", pady=(10, 15), anchor="w")
-    create_ignore_checkbuttons(default_box)  # Modernisierte Checkbuttons
+    create_ignore_checkbuttons(default_box)
 
     preset_frame = ttk.Frame(main_frame)
     preset_frame.pack(fill="x", pady=5)
@@ -387,10 +329,8 @@ def main():
     preset_info_label = ttk.Label(main_frame, text="No specific ignores.", wraplength=560)
     preset_info_label.pack(pady=(5,0))
 
-    PLACEHOLDER_IGNORE = "E.g. .env, secrets"
     ttk.Label(main_frame, text="Additional Ignores (comma-separated):").pack(anchor="w", pady=(15,0))
     custom_ignore_var = tk.StringVar()
-    global entry_ignore
     entry_ignore = ttk.Entry(main_frame, textvariable=custom_ignore_var, width=40)
     entry_ignore.pack(anchor="w")
     entry_ignore.insert(0, PLACEHOLDER_IGNORE)
@@ -403,23 +343,18 @@ def main():
     b_run = ttk.Button(btn_frame, text="Run Script", command=run_script)
     b_run.pack(side="left")
 
-    global btn_clipboard
     btn_clipboard = ttk.Button(btn_frame, text="Copy to Clipboard", command=copy_response_to_clipboard, state=tk.DISABLED)
     btn_clipboard.pack(side="left", padx=5)
 
-    global btn_vscode
     btn_vscode = ttk.Button(btn_frame, text="Open in VSCode", command=open_response_in_vscode, state=tk.DISABLED)
     btn_vscode.pack(side="left", padx=5)
 
-    global open_button
     open_button = ttk.Button(btn_frame, text="Open response.txt", command=open_output_file, state=tk.DISABLED)
     open_button.pack(side="left", padx=5)
 
-    global status_label
     status_label = ttk.Label(main_frame, text="")
     status_label.pack(anchor="w")
 
-    global feedback_bar
     feedback_bar = ttk.Progressbar(main_frame,
                                    style="Feedback.Horizontal.TProgressbar",
                                    orient="horizontal",
@@ -430,8 +365,4 @@ def main():
 
     update_preset_label()
     apply_dark_theme()
-
     root.mainloop()
-
-if __name__ == "__main__":
-    main()
