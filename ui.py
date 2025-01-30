@@ -6,7 +6,7 @@ import sys
 import webbrowser
 
 from onetxt import run_onetxt
-from utils.presets import PRESET_IGNORES, DEFAULT_IGNORE_KEYWORDS, HIDDEN_IGNORE_KEYWORDS, NON_HIDDEN_IGNORE_KEYWORDS
+from utils.presets import PRESET_IGNORES, HIDDEN_IGNORE_KEYWORDS, NON_HIDDEN_IGNORE_KEYWORDS
 
 root = None
 style = None
@@ -34,7 +34,7 @@ def open_donation_link_paypal():
     webbrowser.open("https://paypal.me/flameeey")
 
 def set_status(msg):
-    status_label.config(text=msg)
+    pass
 
 def set_buttons_state(state):
     btn_clipboard.config(state=state)
@@ -42,8 +42,7 @@ def set_buttons_state(state):
     open_button.config(state=state)
 
 def hide_feedback():
-    status_label.config(text="")
-    feedback_bar.pack_forget()
+    pass
 
 def animate_feedback_bar(value):
     if value <= 100:
@@ -53,10 +52,41 @@ def animate_feedback_bar(value):
         root.after(1000, hide_feedback)
 
 def show_executed_feedback():
-    set_status("Script executed.")
-    feedback_bar["value"] = 0
-    feedback_bar.pack(pady=(0, 10))
-    animate_feedback_bar(0)
+    # Frame für Feedback erstellen
+    feedback_frame = ttk.Frame(main_frame)
+    feedback_frame.pack(pady=(5,0), anchor="w", fill="x")
+    
+    # Erfolgsmeldung
+    status_label = ttk.Label(
+        feedback_frame, 
+        text="✓ Script executed", 
+        foreground="#4CAF50" if theme_var.get() == "Dark" else "#2E7D32"
+    )
+    status_label.pack(anchor="w")
+    
+    # Progressbar erstellen
+    feedback_bar = ttk.Progressbar(
+        feedback_frame,
+        style="Feedback.Horizontal.TProgressbar",
+        orient="horizontal",
+        mode="determinate",
+        maximum=100,
+        value=100
+    )
+    feedback_bar.pack(pady=(2,5), fill="x")
+
+    # Animation-Logik
+    def animate(current_value):
+        if current_value > 0:
+            feedback_bar["value"] = current_value
+            # 5000ms / 100 Schritte = 50ms pro Schritt
+            feedback_frame.after(50, animate, current_value - 1)
+        else:
+            feedback_frame.destroy()
+
+    # Animation starten
+    animate(100)  # Startwert 100%
+
 
 def select_directory():
     folder = filedialog.askdirectory(initialdir=os.path.expanduser("~"))
@@ -75,7 +105,6 @@ def run_script():
     txt = custom_ignore_var.get().strip()
     user_ignores = []
     
-    # Add hidden files pattern if enabled
     if ignore_all_hidden_var.get():
         user_ignores.append(".*")
     
@@ -143,51 +172,47 @@ def copy_response_to_clipboard():
 
 def create_ignore_checkbuttons(parent_frame):
     global ignore_all_hidden_var, hidden_checkboxes, default_ignore_vars
+    
     frame = ttk.Frame(parent_frame)
-    frame.pack(fill="x", pady=(10, 15), anchor="w")
+    frame.pack(fill="x", pady=(5, 10))
 
-    # "Ignore all hidden" checkbox
     ignore_all_hidden_var = tk.BooleanVar(value=False)
-    cbtn_all_hidden = ttk.Checkbutton(
-        frame,
-        text="Ignore all hidden files and directories (starting with .)",
-        variable=ignore_all_hidden_var,
-        style="Modern.TCheckbutton"
-    )
-    cbtn_all_hidden.pack(anchor="w", pady=(0, 10))
+    ttk.Checkbutton(frame,
+                    text="Ignore ALL hidden files/dirs (.*)",
+                    variable=ignore_all_hidden_var,
+                    style="Bold.TCheckbutton").pack(anchor="w", pady=5)
 
-    # Hidden files section
-    hidden_label = ttk.Label(frame, text="Common hidden files/directories:")
-    hidden_label.pack(anchor="w", pady=(0, 5))
+    grid_frame = ttk.Frame(frame)
+    grid_frame.pack(fill="x")
+
+    ttk.Label(grid_frame, 
+              text="Common hidden:", 
+              style="Sub.TLabel").grid(row=0, column=0, sticky="w", padx=5)
     
-    hidden_frame = ttk.Frame(frame)
-    hidden_frame.pack(anchor="w", fill="x", pady=(0, 10))
-    
-    cols = 5
-    for index, kw in enumerate(HIDDEN_IGNORE_KEYWORDS):
+    hidden_frame = ttk.Frame(grid_frame)
+    hidden_frame.grid(row=0, column=1, sticky="w")
+    for idx, kw in enumerate(HIDDEN_IGNORE_KEYWORDS):
         var = tk.BooleanVar(value=True)
         default_ignore_vars[kw] = var
-        check_frame = ttk.Frame(hidden_frame, padding=5, relief="ridge")
-        check_frame.grid(row=index//cols, column=index%cols, padx=10, pady=5, sticky="w")
-        cbtn = ttk.Checkbutton(check_frame, text=kw, variable=var, style="Modern.TCheckbutton")
-        cbtn.pack(side="left", padx=5, pady=2)
-        hidden_checkboxes.append(cbtn)
+        cb = ttk.Checkbutton(hidden_frame, text=kw, variable=var)
+        cb.grid(row=0, column=idx, padx=5, sticky="w")
+        hidden_checkboxes.append(cb)
 
-    # Non-hidden files section
-    non_hidden_label = ttk.Label(frame, text="Other common files/directories:")
-    non_hidden_label.pack(anchor="w", pady=(10, 5))
+    ttk.Label(grid_frame, 
+              text="Other common:", 
+              style="Sub.TLabel").grid(row=1, column=0, sticky="w", padx=5, pady=5)
     
-    non_hidden_frame = ttk.Frame(frame)
-    non_hidden_frame.pack(anchor="w", fill="x")
-    
-    for index, kw in enumerate(NON_HIDDEN_IGNORE_KEYWORDS):
+    non_hidden_frame = ttk.Frame(grid_frame)
+    non_hidden_frame.grid(row=1, column=1, sticky="w")
+    for idx, kw in enumerate(NON_HIDDEN_IGNORE_KEYWORDS):
         var = tk.BooleanVar(value=True)
         default_ignore_vars[kw] = var
-        check_frame = ttk.Frame(non_hidden_frame, padding=5, relief="ridge")
-        check_frame.grid(row=index//cols, column=index%cols, padx=10, pady=5, sticky="w")
-        ttk.Checkbutton(check_frame, text=kw, variable=var, style="Modern.TCheckbutton").pack(side="left", padx=5, pady=2)
+        cb = ttk.Checkbutton(non_hidden_frame, text=kw, variable=var)
+        cb.grid(row=0, column=idx, padx=5, sticky="w")
 
-    # Toggle hidden checkboxes state
+    style.configure("Bold.TCheckbutton", font=("Segoe UI", 9, "bold"))
+    style.configure("Sub.TLabel", font=("Segoe UI", 9, "italic"))
+    
     def toggle_hidden_cb(*_):
         state = tk.NORMAL if not ignore_all_hidden_var.get() else tk.DISABLED
         for cb in hidden_checkboxes:
@@ -198,145 +223,90 @@ def create_ignore_checkbuttons(parent_frame):
 
 def apply_styles():
     style.theme_use("clam")
-
-    style.configure(
-        "Modern.TCheckbutton",
-        font=("Helvetica", 10, "bold"),
-        background="#2e2e2e",
-        foreground="white",
-        padding=5,
-        borderwidth=2,
-        relief="flat"
-    )
-    style.map("Modern.TCheckbutton",
-              background=[("active", "#555555"), ("!disabled", "#444444")],
-              foreground=[("active", "#ffffff"), ("!disabled", "#dddddd")])
-
-    style.configure(
-        "Bmac.TButton",
-        background="#FFDBB5",
-        foreground="black",
-        borderwidth=0,
-        relief="flat"
-    )
-    style.map("Bmac.TButton",
-              background=[
-                  ("active", "#FFEAC5"),
-                  ("pressed", "#FFB000"),
-                  ("disabled", "#dddddd")
-              ],
-              foreground=[("active", "black"), ("disabled", "gray")])
-
-    style.configure(
-        "PayPal.TButton",
-        background="#0070BA",
-        foreground="white",
-        borderwidth=0,
-        relief="flat"
-    )
-    style.map("PayPal.TButton",
-              background=[
-                  ("active", "#005EA6"),
-                  ("pressed", "#004885"),
-                  ("disabled", "#dddddd")
-              ],
-              foreground=[("active", "white"), ("disabled", "gray")])
-
-def apply_dark_theme():
-    style.theme_use("clam")
-    root.configure(bg="#1c1c1c")
-    style.configure("Custom.TCheckbutton",
-                    background="#1c1c1c", foreground="white",
-                    borderwidth=0, highlightthickness=0, relief="flat")
-    style.configure("TLabel",
-                    background="#1c1c1c", foreground="white",
-                    borderwidth=0, relief="flat")
-    style.configure("TFrame", background="#1c1c1c")
-    style.configure("TEntry",
-                    fieldbackground="#3a3a3a", foreground="white",
-                    borderwidth=0, relief="flat")
-    style.configure("Feedback.Horizontal.TProgressbar",
-                    thickness=3,
-                    troughcolor="#1c1c1c",
-                    background="yellow",
-                    bordercolor="#1c1c1c")
-    style.configure("TButton",
-                    foreground="black",
-                    borderwidth=0, relief="flat")
+    style.configure(".", 
+                    font=("Segoe UI", 10),
+                    relief="flat")
+    
+    style.configure("TButton", 
+                    padding=6,
+                    borderwidth=0)
+    
     style.map("TButton",
               background=[
                   ("disabled", "#666666"),
-                  ("active", "#e6b800"),
-                  ("pressed", "#d6a600"),
-                  ("!disabled", "#f0c400")
+                  ("active", "#404040"),
+                  ("pressed", "#303030"),
+                  ("!disabled", "#2d2d2d")
               ],
               foreground=[
-                  ("disabled", "white"),
-                  ("active", "black"),
-                  ("!disabled", "black")
-              ])
-    style.configure("TCombobox",
-                    fieldbackground="#3a3a3a", foreground="white",
-                    borderwidth=0, relief="flat")
-    style.map("TCombobox",
-              foreground=[("readonly", "white"), ("disabled", "#888")],
-              background=[("readonly", "#3a3a3a"), ("disabled", "#3a3a3a")])
-    style.configure("Custom.TRadiobutton",
-                    background="#1c1c1c", foreground="white",
-                    borderwidth=0, highlightthickness=0, relief="flat")
-    style.map("Custom.TRadiobutton",
-              background=[("active", "#3a3a3a")],
-              foreground=[("active", "white")])
-    status_label.config(foreground="yellow")
-    preset_info_label.config(foreground="yellow")
-
-def apply_light_theme():
-    style.theme_use("clam")
-    root.configure(bg="#f2f2f2")
-    style.configure("Custom.TCheckbutton",
-                    background="#f2f2f2", foreground="black",
-                    borderwidth=0, highlightthickness=0, relief="flat")
-    style.configure("TLabel",
-                    background="#f2f2f2", foreground="black",
-                    borderwidth=0, relief="flat")
-    style.configure("TFrame", background="#f2f2f2")
-    style.configure("TEntry",
-                    fieldbackground="white", foreground="black",
-                    borderwidth=0, relief="flat")
-    style.configure("Feedback.Horizontal.TProgressbar",
-                    thickness=3,
-                    troughcolor="#f2f2f2",
-                    background="yellow",
-                    bordercolor="#f2f2f2")
-    style.configure("TButton",
-                    foreground="white",
-                    borderwidth=0, relief="flat")
-    style.map("TButton",
-              background=[
-                  ("disabled", "#dddddd"),
-                  ("active", "#0052cc"),
-                  ("pressed", "#003d99"),
-                  ("!disabled", "#007bff")
-              ],
-              foreground=[
-                  ("disabled", "black"),
+                  ("disabled", "#888"),
                   ("active", "white"),
                   ("!disabled", "white")
               ])
-    style.configure("TCombobox",
-                    fieldbackground="white", foreground="black",
-                    borderwidth=0, relief="flat")
-    style.map("TCombobox",
-              foreground=[("readonly", "black"), ("disabled", "#666")],
-              background=[("readonly", "#f2f2f2"), ("disabled", "#f2f2f2")])
-    style.configure("Custom.TRadiobutton",
-                    background="#f2f2f2", foreground="black",
-                    borderwidth=0, highlightthickness=0, relief="flat")
-    style.map("Custom.TRadiobutton",
-              background=[("active", "#cccccc")],
-              foreground=[("active", "black")])
-    status_label.config(foreground="blue")
-    preset_info_label.config(foreground="blue")
+    
+    style.configure("TEntry",
+                    padding=5,
+                    insertwidth=1)
+    
+    style.configure("TCheckbutton",
+                    padding=4,
+                    indicatorsize=14)
+    
+    style.configure("Feedback.Horizontal.TProgressbar",
+        thickness=2,
+        troughcolor="",
+        background="#4CAF50",  # Dark Mode
+        troughrelief="flat")
+
+def apply_dark_theme():
+    root.configure(bg="#1a1a1a")
+    style.configure(".", 
+                    background="#1a1a1a",
+                    foreground="white",
+                    fieldbackground="#2a2a2a")
+    
+    style.map("TEntry",
+              fieldbackground=[("!disabled", "#2a2a2a")],
+              foreground=[("!disabled", "white")])
+    
+    style.configure("TLabel", background="#1a1a1a")
+    style.configure("TFrame", background="#1a1a1a")
+    style.configure("TCombobox", 
+                    arrowcolor="white",
+                    fieldbackground="#2a2a2a")
+
+def apply_light_theme():
+    root.configure(bg="#ffffff")
+    style.configure(".", 
+                    background="#ffffff",
+                    foreground="black",
+                    fieldbackground="#f8f8f8")
+    
+    style.map("TButton",
+              background=[
+                  ("disabled", "#dddddd"),
+                  ("active", "#e0e0e0"),
+                  ("pressed", "#d0d0d0"),
+                  ("!disabled", "#f0f0f0")
+              ],
+              foreground=[
+                  ("disabled", "#888"),
+                  ("active", "black"),
+                  ("!disabled", "black")
+              ])
+    
+    style.map("TEntry",
+              fieldbackground=[("!disabled", "#f8f8f8")],
+              foreground=[("!disabled", "black")])
+    
+    style.configure("TLabel", background="#ffffff")
+    style.configure("TFrame", background="#ffffff")
+    style.configure("TCombobox", 
+                    arrowcolor="black",
+                    fieldbackground="#f8f8f8")
+    
+    style.configure("Feedback.Horizontal.TProgressbar",
+        background="#2E7D32")  # Light Mode Grün
 
 def switch_theme():
     if theme_var.get() == "Dark":
@@ -347,10 +317,7 @@ def switch_theme():
 def on_ignore_focus_in(_):
     if custom_ignore_var.get() == PLACEHOLDER_IGNORE:
         entry_ignore.delete(0, "end")
-        if theme_var.get() == "Dark":
-            entry_ignore.config(foreground="white")
-        else:
-            entry_ignore.config(foreground="black")
+        entry_ignore.config(foreground="white" if theme_var.get() == "Dark" else "black")
 
 def on_ignore_focus_out(_):
     if not custom_ignore_var.get():
@@ -363,120 +330,89 @@ def run_ui():
     global preset_info_label, status_label
     global btn_clipboard, btn_vscode, open_button
     global theme_var, entry_ignore
-    global feedback_bar
+    global main_frame
 
     root = tk.Tk()
-    root.title("aFlamee - OneTXT - Directory -> text")
-    root.geometry("750x650")
-    root.resizable(True, True)
+    root.title("OneTXT - Directory to Text")
+    root.geometry("680x600")
+    root.resizable(False, False)
 
     style = ttk.Style(root)
-    style.theme_use("clam")
-
     apply_styles()
 
-    heading_frame = ttk.Frame(root, padding="10")
-    heading_frame.pack(fill="x")
-    lbl_heading = ttk.Label(heading_frame, text="Welcome to OneTXT!", font=("Helvetica", 14, "bold"))
-    lbl_heading.pack(side="left")
-
-    theme_var = tk.StringVar(value="Dark")
-    theme_switch_frame = ttk.Frame(heading_frame)
-    theme_switch_frame.pack(side="right")
-    ttk.Label(theme_switch_frame, text="Theme:").pack(side="left", padx=(0,5))
-
-    dark_rb = ttk.Radiobutton(theme_switch_frame, text="Dark", variable=theme_var, value="Dark",
-                              command=switch_theme, takefocus=False, style="Custom.TRadiobutton")
-    dark_rb.pack(side="left", padx=5)
-    light_rb = ttk.Radiobutton(theme_switch_frame, text="White", variable=theme_var, value="White",
-                               command=switch_theme, takefocus=False, style="Custom.TRadiobutton")
-    light_rb.pack(side="left", padx=5)
-
-    main_frame = ttk.Frame(root, padding="10")
+    main_frame = ttk.Frame(root, padding=10)
     main_frame.pack(fill="both", expand=True)
 
-    note_label = ttk.Label(main_frame, text="Note: .gitignore and .dockerignore are also used by default.")
-    note_label.pack(anchor="w", pady=(0,10))
+    header_frame = ttk.Frame(main_frame)
+    header_frame.pack(fill="x", pady=(0, 10))
+    
+    ttk.Label(header_frame, 
+              text="OneTXT", 
+              font=("Segoe UI", 16, "bold")).pack(side="left")
+    
+    theme_var = tk.StringVar(value="Dark")
+    theme_frame = ttk.Frame(header_frame)
+    theme_frame.pack(side="right")
+    ttk.Radiobutton(theme_frame, text="☀", variable=theme_var, 
+                    value="White", command=switch_theme).pack(side="right", padx=2)
+    ttk.Radiobutton(theme_frame, text="🌙", variable=theme_var,
+                    value="Dark", command=switch_theme).pack(side="right", padx=2)
 
     dir_frame = ttk.Frame(main_frame)
     dir_frame.pack(fill="x", pady=5)
-    ttk.Label(dir_frame, text="Select Directory:").pack(side="left", padx=(0,5))
+    ttk.Label(dir_frame, text="Project Folder:").pack(side="left")
     path_var = tk.StringVar()
-    entry_path = ttk.Entry(dir_frame, textvariable=path_var, width=40)
-    entry_path.pack(side="left", expand=True, fill="x")
-    b_browse = ttk.Button(dir_frame, text="Browse", command=select_directory)
-    b_browse.pack(side="left", padx=5)
-
-    default_box = ttk.LabelFrame(main_frame, text="Default Ignores (Check/Uncheck as you like)", padding=10)
-    default_box.pack(fill="x", pady=(10, 15), anchor="w")
-    create_ignore_checkbuttons(default_box)
+    entry_path = ttk.Entry(dir_frame, textvariable=path_var)
+    entry_path.pack(side="left", expand=True, fill="x", padx=5)
+    ttk.Button(dir_frame, text="Browse", command=select_directory, width=8).pack(side="left")
 
     preset_frame = ttk.Frame(main_frame)
     preset_frame.pack(fill="x", pady=5)
-    ttk.Label(preset_frame, text="Technology Preset:").pack(side="left", padx=(0,5))
+    ttk.Label(preset_frame, text="Preset:").pack(side="left")
     preset_var = tk.StringVar(value="No Preset")
-    combo_presets = ttk.Combobox(preset_frame, textvariable=preset_var, values=list(PRESET_IGNORES.keys()),
-                                 width=20, state="readonly")
-    combo_presets.pack(side="left")
+    combo_presets = ttk.Combobox(preset_frame, 
+                               textvariable=preset_var, 
+                               values=list(PRESET_IGNORES.keys()),
+                               width=18,
+                               state="readonly")
+    combo_presets.pack(side="left", padx=5)
     combo_presets.bind("<<ComboboxSelected>>", update_preset_label)
 
-    preset_info_label = ttk.Label(main_frame, text="No specific ignores.", wraplength=560)
-    preset_info_label.pack(pady=(5,0))
+    preset_info_label = ttk.Label(main_frame, wraplength=560)
+    preset_info_label.pack(pady=(0, 5))
 
-    ttk.Label(main_frame, text="Additional Ignores (File & Directory) (comma-separated):").pack(anchor="w", pady=(15,0))
+    default_box = ttk.LabelFrame(main_frame, text="Ignore Settings", padding=5)
+    default_box.pack(fill="x", pady=5)
+    create_ignore_checkbuttons(default_box)
+
+    ttk.Label(main_frame, text="Additional Ignores:").pack(anchor="w", pady=(5, 0))
     custom_ignore_var = tk.StringVar()
-    entry_ignore = ttk.Entry(main_frame, textvariable=custom_ignore_var, width=40)
-    entry_ignore.pack(anchor="w")
+    entry_ignore = ttk.Entry(main_frame, textvariable=custom_ignore_var)
+    entry_ignore.pack(fill="x", pady=2)
     entry_ignore.insert(0, PLACEHOLDER_IGNORE)
     entry_ignore.config(foreground="#888")
     entry_ignore.bind("<FocusIn>", on_ignore_focus_in)
     entry_ignore.bind("<FocusOut>", on_ignore_focus_out)
 
     btn_frame = ttk.Frame(main_frame)
-    btn_frame.pack(fill="x", pady=15)
-    b_run = ttk.Button(btn_frame, text="Run Script", command=run_script)
-    b_run.pack(side="left")
-
-    btn_clipboard = ttk.Button(btn_frame, text="Copy to Clipboard", command=copy_response_to_clipboard, state=tk.DISABLED)
+    btn_frame.pack(fill="x", pady=10)
+    ttk.Button(btn_frame, text="Generate", command=run_script).pack(side="left")
+    btn_clipboard = ttk.Button(btn_frame, text="Copy", command=copy_response_to_clipboard, state=tk.DISABLED)
     btn_clipboard.pack(side="left", padx=5)
-
-    btn_vscode = ttk.Button(btn_frame, text="Open in VSCode", command=open_response_in_vscode, state=tk.DISABLED)
+    btn_vscode = ttk.Button(btn_frame, text="VSCode", command=open_response_in_vscode, state=tk.DISABLED)
     btn_vscode.pack(side="left", padx=5)
 
-    open_button = ttk.Button(btn_frame, text="Open response.txt", command=open_output_file, state=tk.DISABLED)
+    open_button = ttk.Button(btn_frame, text="Open File", command=open_output_file, state=tk.DISABLED)
     open_button.pack(side="left", padx=5)
 
-    # Donation frame (placed after the main action buttons, not at the bottom)
     support_frame = ttk.Frame(main_frame)
-    support_frame.pack(anchor="e", pady=(0, 10))
+    support_frame.pack(fill="x", pady=(10, 0))
+    ttk.Button(support_frame, text="☕️ Buy Me a Coffee", command=open_donation_link).pack(side="right", padx=2)
+    ttk.Button(support_frame, text="🅿 PayPal", command=open_donation_link_paypal).pack(side="right", padx=2)
 
-    b_bmac = ttk.Button(
-        support_frame,
-        text="☕️ Buy Me a Coffee",
-        style="Bmac.TButton",
-        command=open_donation_link
-    )
-    b_bmac.pack(side="left", padx=(0,10))
-
-    b_paypal = ttk.Button(
-        support_frame,
-        text="🅿 Donate via PayPal",
-        style="PayPal.TButton",
-        command=open_donation_link_paypal
-    )
-    b_paypal.pack(side="left")
-
-    status_label = ttk.Label(main_frame, text="")
-    status_label.pack(anchor="w")
-
-    feedback_bar = ttk.Progressbar(main_frame,
-                                   style="Feedback.Horizontal.TProgressbar",
-                                   orient="horizontal",
-                                   mode="determinate",
-                                   maximum=100,
-                                   value=0)
-    feedback_bar.pack_forget()
+    status_label = ttk.Label(main_frame)
+    status_label.pack(anchor="w", pady=(5, 0))
 
     update_preset_label()
-    apply_dark_theme()
+    switch_theme()
     root.mainloop()
