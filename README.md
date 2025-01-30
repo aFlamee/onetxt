@@ -82,7 +82,7 @@ python3 main.py
 python main.py
 ```
 
-- A **GUI window** titled *“aFlamee - rep2txt - Repository -> text”* should appear.
+- A **GUI window** titled *“aFlamee - OneTXT - Directory -> text”* should appear.
 - Select your desired directory, configure ignore settings, and run the script.
 
 ---

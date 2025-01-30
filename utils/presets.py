@@ -15,7 +15,8 @@ PRESET_IGNORES = {
     "Ruby on Rails": [
         "tmp", "log", "vendor", "coverage", "node_modules",
         "Gemfile.lock", "package-lock.json", "yarn.lock",
-        "pnpm-lock.yaml", "bun.lockb", "assets"
+        "pnpm-lock.yaml", "bun.lockb", "assets", ".rubocop.yml",
+        ".ruby-version"
     ],
     "Angular": [
         "node_modules", "dist", ".angular",
@@ -25,6 +26,16 @@ PRESET_IGNORES = {
 }
 
 DEFAULT_IGNORE_KEYWORDS = [
+    ".github",".git","tmp", "cache", "bin", "build", "dist", "out", "logs", "README.md",
+    "node_modules", "venv", ".venv", "__pycache__", ".idea", ".vscode", ".gitignore"
+]
+
+HIDDEN_IGNORE_KEYWORDS = [
+    ".github", ".git", ".gitignore", ".idea", ".vscode", ".env",
+    ".dockerignore", ".DS_Store", ".npmignore", ".yarn", ".ruby-version"
+]
+
+NON_HIDDEN_IGNORE_KEYWORDS = [
     "tmp", "cache", "bin", "build", "dist", "out", "logs", "README.md",
-    "node_modules", "venv", ".venv", "__pycache__", ".idea", ".vscode"
+    "node_modules", "venv", ".venv", "__pycache__"
 ]
