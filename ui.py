@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog
 import subprocess
 import os
 import sys
+import webbrowser
 
 from repo2txt import run_repo2txt
 from utils.presets import PRESET_IGNORES, DEFAULT_IGNORE_KEYWORDS
@@ -20,8 +21,15 @@ open_button = None
 theme_var = None
 entry_ignore = None
 feedback_bar = None
+
 PLACEHOLDER_IGNORE = "E.g. .env, secrets"
 default_ignore_vars = {}
+
+def open_donation_link():
+    webbrowser.open("https://buymeacoffee.com/flameeey")
+
+def open_donation_link_paypal():
+    webbrowser.open("https://paypal.me/flameeey")
 
 def set_status(msg):
     status_label.config(text=msg)
@@ -142,13 +150,49 @@ def create_ignore_checkbuttons(parent_frame):
 
 def apply_styles():
     style.theme_use("clam")
-    style.configure("Modern.TCheckbutton",
-                    font=("Helvetica", 10, "bold"),
-                    background="#2e2e2e", foreground="white",
-                    padding=5, borderwidth=2, relief="flat")
+
+    style.configure(
+        "Modern.TCheckbutton",
+        font=("Helvetica", 10, "bold"),
+        background="#2e2e2e",
+        foreground="white",
+        padding=5,
+        borderwidth=2,
+        relief="flat"
+    )
     style.map("Modern.TCheckbutton",
               background=[("active", "#555555"), ("!disabled", "#444444")],
               foreground=[("active", "#ffffff"), ("!disabled", "#dddddd")])
+
+    style.configure(
+        "Bmac.TButton",
+        background="#FFDBB5",
+        foreground="black",
+        borderwidth=0,
+        relief="flat"
+    )
+    style.map("Bmac.TButton",
+              background=[
+                  ("active", "#FFEAC5"),
+                  ("pressed", "#FFB000"),
+                  ("disabled", "#dddddd")
+              ],
+              foreground=[("active", "black"), ("disabled", "gray")])
+
+    style.configure(
+        "PayPal.TButton",
+        background="#0070BA",
+        foreground="white",
+        borderwidth=0,
+        relief="flat"
+    )
+    style.map("PayPal.TButton",
+              background=[
+                  ("active", "#005EA6"),
+                  ("pressed", "#004885"),
+                  ("disabled", "#dddddd")
+              ],
+              foreground=[("active", "white"), ("disabled", "gray")])
 
 def apply_dark_theme():
     style.theme_use("clam")
@@ -275,11 +319,13 @@ def run_ui():
 
     root = tk.Tk()
     root.title("aFlamee - rep2txt - Repository -> text")
-    root.geometry("750x550")
+    root.geometry("750x580")
     root.resizable(False, False)
 
     style = ttk.Style(root)
     style.theme_use("clam")
+    
+    apply_styles()
 
     heading_frame = ttk.Frame(root, padding="10")
     heading_frame.pack(fill="x")
@@ -351,6 +397,26 @@ def run_ui():
 
     open_button = ttk.Button(btn_frame, text="Open response.txt", command=open_output_file, state=tk.DISABLED)
     open_button.pack(side="left", padx=5)
+
+    # Donation frame (placed after the main action buttons, not at the bottom)
+    support_frame = ttk.Frame(main_frame)
+    support_frame.pack(anchor="e", pady=(0, 10))
+
+    b_bmac = ttk.Button(
+        support_frame,
+        text="☕️ Buy Me a Coffee",
+        style="Bmac.TButton",
+        command=open_donation_link
+    )
+    b_bmac.pack(side="left", padx=(0,10))
+
+    b_paypal = ttk.Button(
+        support_frame,
+        text="🅿 Donate via PayPal",
+        style="PayPal.TButton",
+        command=open_donation_link_paypal
+    )
+    b_paypal.pack(side="left")
 
     status_label = ttk.Label(main_frame, text="")
     status_label.pack(anchor="w")

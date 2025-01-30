@@ -25,6 +25,6 @@ PRESET_IGNORES = {
 }
 
 DEFAULT_IGNORE_KEYWORDS = [
-    "tmp", "cache", "bin", "build", "dist", "out", "logs",
+    "tmp", "cache", "bin", "build", "dist", "out", "logs", "README.md",
     "node_modules", "venv", ".venv", "__pycache__", ".idea", ".vscode"
 ]
