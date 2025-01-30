@@ -1,3 +1,8 @@
 */__pycache__
 /__pycache__
 .DS_Store
+
+.venv
+.git
+
+/src/onetxt.egg-info

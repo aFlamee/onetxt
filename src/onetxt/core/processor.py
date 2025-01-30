@@ -1,6 +1,6 @@
 import os
 import fnmatch
-from utils.ignore_patterns import load_ignore_patterns, is_ignored_by_patterns
+from ..utils.ignore_patterns import load_ignore_patterns, is_ignored_by_patterns
 
 
 def load_gitignore_patterns_from_hierarchy(current_path, base_dir, use_gitignore, use_dockerignore):

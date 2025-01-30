@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onetxt"
+version = "0.1.0"
+description = "Directory to text converter with ignore rules"
+readme = "README.md"
+requires-python = ">=3.8"
