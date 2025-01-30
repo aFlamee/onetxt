@@ -1,3 +1,6 @@
+
+
+=== ui.py ===
 import tkinter as tk
 from tkinter import ttk, filedialog
 import subprocess
@@ -536,3 +539,218 @@ def run_ui():
     update_preset_label()
     switch_theme()
     root.mainloop()
+
+
+=== main.py ===
+from ui import run_ui
+
+if __name__ == "__main__":
+    run_ui()
+
+
+
+=== onetxt.py ===
+import os
+import fnmatch
+from utils.ignore_patterns import load_ignore_patterns, is_ignored_by_patterns
+
+
+def load_gitignore_patterns_from_hierarchy(current_path, base_dir, use_gitignore, use_dockerignore):
+    patterns = []
+    current_dir = os.path.dirname(current_path)
+    
+    if use_gitignore:
+        # Traverse up from current directory to base_dir
+        while True:
+            gitignore_path = os.path.join(current_dir, '.gitignore')
+            if os.path.isfile(gitignore_path):
+                patterns += load_ignore_patterns(gitignore_path)
+            
+            if current_dir == base_dir:
+                break
+            current_dir = os.path.dirname(current_dir)
+
+    if use_dockerignore:
+        # .dockerignore only in root-dir
+        dockerignore_path = os.path.join(base_dir, '.dockerignore')
+        if os.path.isfile(dockerignore_path):
+            patterns += load_ignore_patterns(dockerignore_path)
+    
+    return patterns
+
+def should_ignore(path, base_dir, user_ignores, use_gitignore, use_dockerignore):
+    ignore_patterns = user_ignores.copy()
+    
+    if use_gitignore or use_dockerignore:
+        ignore_patterns += load_gitignore_patterns_from_hierarchy(
+            path, base_dir, use_gitignore, use_dockerignore
+        )
+    
+    relative_path = os.path.relpath(path, base_dir)
+    return is_ignored_by_patterns(relative_path, ignore_patterns)
+
+def process_directory(base_dir, user_ignores, use_gitignore, use_dockerignore):
+    output = []
+    total_files = 0
+    ignored_files = 0
+    
+    for root, dirs, files in os.walk(base_dir, topdown=True):
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            if should_ignore(file_path, base_dir, user_ignores, use_gitignore, use_dockerignore):
+                ignored_files += 1
+                continue
+            
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                output.append(f"\n\n=== {os.path.relpath(file_path, base_dir)} ===\n{content}")
+                total_files += 1
+            except Exception as e:
+                continue
+        
+        dirs[:] = [d for d in dirs if not should_ignore(
+            os.path.join(root, d), 
+            base_dir, 
+            user_ignores, 
+            use_gitignore,
+            use_dockerignore
+        )]
+    
+    return {
+        'content': '\n'.join(output),
+        'stats': {
+            'total_files': total_files,
+            'ignored_files': ignored_files,
+            'total_size': len(''.join(output))
+        }
+    }
+
+def run_onetxt(base_dir, user_ignores, use_gitignore=True, use_dockerignore=True):
+    user_ignores = user_ignores.copy()
+    user_ignores.append('response.txt')
+
+    result = process_directory(base_dir, user_ignores, use_gitignore, use_dockerignore)
+    output_file = os.path.join(base_dir, 'response.txt')
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(result['content'])
+    
+    print(f"Processed {result['stats']['total_files']} files "
+          f"(ignored {result['stats']['ignored_files']})")
+    return output_file
+
+
+=== utils/ignore_patterns.py ===
+import os
+import fnmatch
+
+def load_ignore_patterns(ignore_file_path):
+    patterns = []
+    if os.path.isfile(ignore_file_path):
+        with open(ignore_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    if line.endswith('/'):
+                        line = line[:-1]
+                    patterns.append(line)
+    return patterns
+
+def is_ignored_by_patterns(relative_path, ignore_patterns):
+    for pattern in ignore_patterns:
+        if fnmatch.fnmatch(relative_path, pattern):
+            return True
+        if fnmatch.fnmatch(os.path.basename(relative_path), pattern):
+            return True
+    return False
+
+
+=== utils/presets.py ===
+PRESET_IGNORES = {
+    "No Preset": [],
+    "NextJs": [
+        "node_modules", ".next", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb"
+    ],
+    "SvelteKit": [
+        "node_modules", ".svelte-kit", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb"
+    ],
+    "React": [
+        "node_modules", "build", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb"
+    ],
+    "Ruby on Rails": [
+        "tmp", "log", "vendor", "coverage", "node_modules",
+        "Gemfile.lock", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb", "assets", ".rubocop.yml",
+        ".ruby-version", "storage", "public/uploads", ".rspec", 
+        "config/credentials.yml.enc", "config/master.key",
+        "docker-compose.override.yml"
+    ],
+    "Angular": [
+        "node_modules", "dist", ".angular",
+        "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb",
+        "e2e", "browser", "karma.conf.js",
+        ".angular/cache", "*.ngsummary.json"
+    ],
+    "Django/Flask (Python)": [
+        "__pycache__", "*.pyc", ".venv", "venv",
+        "db.sqlite3", "migrations", ".coverage",
+        "media", "staticfiles", ".pytest_cache"
+    ],
+    "Vue.js/Nuxt": [
+        "node_modules", "dist", ".nuxt", ".output",
+        ".vuepress", "*.log", ".env.local"
+    ],
+    "Laravel (PHP)": [
+        "vendor", "node_modules", "storage/framework/cache",
+        "storage/logs", ".env", "bootstrap/cache",
+        "public/storage", "public/hot"
+    ],
+    "Go": [
+        "bin", "pkg", ".exe", "debug", "vendor",
+        "coverage.out", "*.test", ".vscode"
+    ],
+    "Android (Java/Kotlin)": [
+        "build", ".gradle", "captures", ".idea",
+        "local.properties", "*.apk", "*.aab",
+        "*.iml", "app/release"
+    ],
+    "iOS (Swift)": [
+        "Pods", "DerivedData", "*.xcworkspace",
+        "Podfile.lock", "Cartfile.resolved",
+        "fastlane/report.xml", "build"
+    ]
+}
+
+DEFAULT_IGNORE_KEYWORDS = [
+    ".github",".git","tmp", "cache", "bin", "build", "dist", "out", "logs", "README.md",
+    "node_modules", "venv", ".venv", "__pycache__", ".idea", ".vscode", ".gitignore"
+]
+
+HIDDEN_IGNORE_KEYWORDS = [
+    ".github", ".git", ".gitignore", ".idea", ".vscode", ".env",
+    ".dockerignore", ".DS_Store", ".npmignore", ".yarn", ".ruby-version",
+    ".eslintcache", ".tern-port", 
+    ".sass-cache", ".nyc_output",
+    ".cache-loader", ".babelcache",
+    ".metro-cache", ".fusebox",
+    ".history"
+]
+
+NON_HIDDEN_IGNORE_KEYWORDS = [
+    "tmp", "cache", "bin", "build", "dist", "out", "logs", "README.md",
+    "node_modules", "venv", ".venv", "__pycache__",
+    "coverage", "reports", 
+    "junit", "test-results",
+    "docker-data", "dump.rdb",
+    "*.log", "*.tmp", "*.bak",
+    "*.swp", "*.swo"
+]
+
+
+
+=== utils/__init__.py ===
