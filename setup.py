@@ -7,8 +7,10 @@ setup(
     package_dir={"": "src"},
     install_requires=[],
     entry_points={
-        'gui_scripts': [
+        'console_scripts': [  
             'onetxt=onetxt.gui.main_window:run_ui'
         ],
     },
+    python_requires='>=3.8',
+    include_package_data=True,
 )

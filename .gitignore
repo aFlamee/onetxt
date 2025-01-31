@@ -1,4 +1,4 @@
-*/__pycache__
+src/onetxt/__pycache__
 /__pycache__
 .DS_Store
 
@@ -7,3 +7,9 @@
 
 /src/onetxt.egg-info
 *.bak
+
+LICENSE
+
+/build
+/dist
+OneTXT.spec

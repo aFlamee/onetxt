@@ -2,7 +2,7 @@
 
 I created OneTXT to make coding with an LLM much easier. When you provide an AI with the full source code of a project, you can get way better answers and suggestions. But manually gathering all files? Ain’t nobody got time for that! And that’s where OneTXT comes in.
 
-OneTXT is an open-source tool that converts directory structures into readable text output while respecting ignore rules (e.g., `.gitignore`, `.dockerignore`). It features a GUI for ease of use and supports predefined presets for popular frameworks like SvelteKit, Next.js, React, Django and more.
+OneTXT is an open-source tool that converts directory structures into readable text output while respecting ignore rules (e.g., `.gitignore`, `.dockerignore`). It features a GUI for ease of use and supports predefined presets for popular frameworks like Next.js, React, Django, SvelteKit and more.
 
 ## Features
 
@@ -22,7 +22,7 @@ If you're a normal user who just wants to click a button and let magic happen, y
 
 ⚠ **Security Warning**: Your OS might panic and yell at you about an "untrusted application". This is just because the app is **not digitally signed**—not because it’s dangerous. Signing costs money, and guess what? I’d rather spend that on coffee. If you trust me, just run the app. If not, feel free to check out the code and run it manually (see below).
 
-### Manual Installation (For Developers & Advanced Users)
+### Manual Installation (For Developers & Advanced Users & People with trust issues)
 
 #### Prerequisites
 
@@ -35,15 +35,27 @@ git clone https://github.com/aFlamee/onetxt.git
 cd onetxt
 ```
 
-#### 2. Install Dependencies
+#### 2. Delete existing and start a new virtual environment
 
 ```bash
-pip install -r requirements.txt
+# Delete old virtual env
+rm -rf .venv
+
+# Create a new virtual env
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Editable install
+pip install -e .
 ```
 
 #### 3. Run the Application
 
 ```bash
+pip uninstall onetxt -y
+pip install -e .
+
+# Start the App
 python -m onetxt
 ```
 
