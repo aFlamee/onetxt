@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
 import tkinter as tk
 from tkinter import ttk, filedialog
 import subprocess

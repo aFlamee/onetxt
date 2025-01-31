@@ -6,3 +6,4 @@
 .git
 
 /src/onetxt.egg-info
+*.bak

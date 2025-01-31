@@ -1,110 +1,102 @@
-# README – Installation & Usage
+# OneTXT - Directory to Text Converter
 
-## Prerequisites
+I created OneTXT to make coding with an LLM much easier. When you provide an AI with the full source code of a project, you can get way better answers and suggestions. But manually gathering all files? Ain’t nobody got time for that! And that’s where OneTXT comes in.
 
-- **Python 3.9+** (make sure `tkinter` is included, which is typically part of standard installations)
-- Operating System: macOS, Windows, or Linux
+OneTXT is an open-source tool that converts directory structures into readable text output while respecting ignore rules (e.g., `.gitignore`, `.dockerignore`). It features a GUI for ease of use and supports predefined presets for popular frameworks like SvelteKit, Next.js, React, Django and more.
 
-## 1. Install Python 3
+## Features
 
-### macOS
-1. **Install Homebrew** (if not already installed):  
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
-2. **Install Python 3**:  
-   ```bash
-   brew install python@3.9
-   ```
-   *(Exact version may differ based on what is currently available.)*
-
-### Windows
-1. Go to the [official Python website](https://www.python.org/downloads/).
-2. Download the latest Python 3.x installer for Windows.
-3. Run the installer and select **“Add Python to PATH”** to allow Python commands in your terminal.
-4. After installation, verify the installation in PowerShell or cmd:
-   ```bash
-   python --version
-   ```
-   You should see something like `Python 3.x.x`.
-
-### Linux (Debian/Ubuntu-based)
-1. Open your terminal.
-2. Run the following:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install python3 python3-pip
-   ```
-3. Verify the version:
-   ```bash
-   python3 --version
-   ```
-
-*(For other distributions like Fedora, openSUSE, etc., use your package manager, such as `dnf`, `yum`, or `zypper`.)*
+- **GUI-Based**: Simple and intuitive interface for selecting directories and configuring ignore rules.
+- **Ignore Patterns**: Supports `.gitignore`, `.dockerignore`, and custom ignore rules.
+- **Predefined Presets**: Quick setup for popular frameworks (React, Next.js, Django, etc.).
+- **Text Output**: Converts file content into a single text file (`response.txt`).
+- **Multi-Platform**: Runs on Windows, macOS, and Linux.
 
 ---
 
-## 2. Clone or Download the Project
-1. Download the repository or clone it into a folder of your choice.
-2. Navigate into the project directory.
+## Installation
 
----
+### Download the Executable (Recommended for Non-IT Users)
 
-## 3. Install Dependencies
-A `requirements.txt` file is included in the project. Make sure you’re in the project folder, then run:
+If you're a normal user who just wants to click a button and let magic happen, you can download the latest **OneTXT.exe** from the [Releases](https://github.com/YOUR_USERNAME/onetxt/releases) section and run it directly on Windows.
 
-### macOS / Linux
+⚠ **Security Warning**: Your OS might panic and yell at you about an "untrusted application". This is just because the app is **not digitally signed**—not because it’s dangerous. Signing costs money, and guess what? I’d rather spend that on coffee. If you trust me, just run the app. If not, feel free to check out the code and run it manually (see below).
+
+### Manual Installation (For Developers & Advanced Users)
+
+#### Prerequisites
+
+- **Python 3.8+** (Make sure `tkinter` is installed)
+
+#### 1. Clone the Repository
+
 ```bash
-python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
+git clone https://github.com/aFlamee/onetxt.git
+cd onetxt
 ```
 
-### Windows
+#### 2. Install Dependencies
+
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-*(If you prefer using “python3” on Windows, ensure that the appropriate alias is set during the Python installation.)*
+#### 3. Run the Application
 
----
-
-## 4. Run the Application
-After the dependencies have been successfully installed, start the application:
-
-### macOS / Linux
 ```bash
-python3 main.py
+python -m onetxt
 ```
 
-### Windows
-```bash
-python main.py
-```
+This will launch the graphical interface. Boom. Simple.
 
-- A **GUI window** titled *“aFlamee - OneTXT - Directory -> text”* should appear.
-- Select your desired directory, configure ignore settings, and run the script.
+For more advanced usage instructions and details on how the project is structured, check out the [Usage Guide](docs/usage.md).
 
 ---
 
-## 5. Brief Overview
-1. **Select a Directory** – for example, your repository folder.
-2. **Default Ignores** – check/uncheck known folders/files (e.g., `node_modules`, `.idea`).
-3. **Presets** – choose a technology preset (e.g., React, NextJs). This will automatically add relevant ignore patterns.
-4. **Additional Ignores** – enter your custom ignores (comma-separated).
-5. **Run Script** – click **“Run Script”**.
-6. When the process completes, you can:
-   - **Open** `response.txt`
-   - **Copy** the contents to your clipboard
-   - **Open** the file in **VSCode** (if `code` is available on your PATH)
+## Usage
+
+### 1. Select a Directory
+
+Pick a folder that contains the files you want to process.
+
+### 2. Configure Ignore Rules
+
+- **Use .gitignore/.dockerignore**: Because sometimes, you just don’t want all files.
+- **Presets**: Got a React or Django project? One click, and we’ll handle the boring stuff for you.
+- **Custom Ignores**: Add additional files/folders to ignore. Because customization is life.
+
+### 3. Run the Script
+
+Click the **Generate txt** button to process the directory. The output will be saved as `response.txt` in the directory you just read from.&#x20;
+
+Yes, it's that easy.
+
+### 4. Output Handling
+
+Once the process is complete, you can:
+
+- **Open response.txt** (To go directly to your favorit LLM afterwards)
+- **Copy its content to clipboard**
+- **Open it in VSCode** (for all the fancy devs out there)
 
 ---
 
-## Known Issues
-- If **VSCode** doesn’t open via the `code` command, ensure VSCode is installed correctly and [set up for command line usage](https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line).
-- On macOS, opening `response.txt` via the `open` command may fail if file access permissions are restricted. You can open it directly from Finder as a workaround.
+## Contributing
+
+Contributions are welcome! Fork the repo, make your changes, and submit a pull request. No red tape. Just code.
 
 ---
 
-### Enjoy using the application!
+## Support
+
+If this tool saves you hours of tedious work, consider fueling my caffeine addiction:
+
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/flameeey)
+- 💰 [Donate via PayPal](https://paypal.me/flameeey)
+
+---
+
+## License
+
+This project is licensed under the GNU General Public License v3. See the [LICENSE](LICENSE) file for details.
 

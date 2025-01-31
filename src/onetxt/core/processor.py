@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
 import os
 import fnmatch
 from ..utils.ignore_patterns import load_ignore_patterns, is_ignored_by_patterns
