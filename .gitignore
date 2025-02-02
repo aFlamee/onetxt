@@ -10,6 +10,7 @@ src/onetxt/*/__pycache__
 *.bak
 
 LICENSE
+response.txt
 
 /build
 /dist

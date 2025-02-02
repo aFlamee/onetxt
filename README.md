@@ -1,107 +1,128 @@
+
+## README.md
+
+
 # OneTXT - Directory to Text Converter
 
 I created OneTXT to make coding with an LLM much easier. When you provide an AI with the full source code of a project, you can get way better answers and suggestions. But manually gathering all files? Ain’t nobody got time for that! And that’s where OneTXT comes in.
 
-OneTXT is an open-source tool that converts directory structures into readable text output while respecting ignore rules (e.g., `.gitignore`, `.dockerignore`). It features a GUI for ease of use and supports predefined presets for popular frameworks like Next.js, React, Django, SvelteKit and more.
+OneTXT is an open-source tool that converts directory structures into a single, readable text file while respecting ignore rules (like `.gitignore` and `.dockerignore`). It comes with a simple, intuitive graphical interface so anyone—even non-techie users—can get started without fuss.
+
 
 ## Features
 
-- **GUI-Based**: Simple and intuitive interface for selecting directories and configuring ignore rules.
-- **Ignore Patterns**: Supports `.gitignore`, `.dockerignore`, and custom ignore rules.
-- **Predefined Presets**: Quick setup for popular frameworks (React, Next.js, Django, etc.).
-- **Text Output**: Converts file content into a single text file (`response.txt`).
-- **Multi-Platform**: Runs on Windows, macOS, and Linux.
+- **Ignore Patterns:**  
+  OneTXT supports `.gitignore`, `.dockerignore`, and custom ignore rules to filter out unnecessary files automatically.
 
----
+- **Predefined Presets:**  
+  Quickly set up ignore configurations for popular frameworks like React, Next.js, Django, etc. These presets automatically exclude common ignore files and directories for each selected framework.
 
-## Installation
+- **Ignore Settings:**  
+  Fine-tune what gets logged by excluding not only hidden files/directories (such as `.git` or `.github`) but also common clutter folders (like `/tmp` or `/log`). This drastically reduces the size of the output file.
 
-### Download the Executable (Recommended for Non-IT Users)
+- **Additional Ignore:**  
+  Missing a specific file or directory from our defaults? Simply add it to the text field—separate multiple entries with a comma for easy customization.
 
-If you're a normal user who just wants to click a button and let magic happen, you can download the latest **OneTXT.exe** from the [Releases](https://github.com/YOUR_USERNAME/onetxt/releases) section and run it directly on Windows.
+- **Text Output:**  
+  Converts all file content into one neatly formatted text file (`response.txt`), ensuring only the most essential files are included.
 
-⚠ **Security Warning**: Your OS might panic and yell at you about an "untrusted application". This is just because the app is **not digitally signed**—not because it’s dangerous. Signing costs money, and guess what? I’d rather spend that on coffee. If you trust me, just run the app. If not, feel free to check out the code and run it manually (see below).
+- **Multi-Platform:**  
+  OneTXT runs seamlessly on Windows, macOS, and Linux.
 
-### Manual Installation (For Developers & Advanced Users & People with trust issues)
+*Each feature is designed to keep the resulting text file as lean and focused as possible, containing only the necessary files for your LLM to work.*
 
-#### Prerequisites
+## Installation & Getting Started
 
-- **Python 3.8+** (Make sure `tkinter` is installed)
+### For Non-IT Users
 
-#### 1. Clone the Repository
+If you just want to click a button and let the magic happen, follow these steps:
 
-```bash
-git clone https://github.com/aFlamee/onetxt.git
-cd onetxt
-```
+1. **Download the Executable:**  
+   Head over to the [Releases](https://github.com/aFlamee/onetxt/releases) page and download the latest **OneTXT.exe** for Windows, Mac and Linux.
 
-#### 2. Delete existing and start a new virtual environment
+2. **Security Note:**  
+   Your OS might warn you about an "untrusted application" because the app isn’t digitally signed. This is normal—if you trust the source(me 👉🏼👈🏼), go ahead and run it.
 
-```bash
-# Delete old virtual env
-rm -rf .venv
+### Manual Installation (For the Advanced or for someone with trust issues)
+1. **Clone the Repository or Download the ZIP:**  
+   Open your terminal (or Command Prompt) and run:
+   ```bash
+   git clone https://github.com/aFlamee/onetxt.git
+   cd onetxt
+   ```
+   Or just Download the ZIP.
 
-# Create a new virtual env
-python3 -m venv .venv
-source .venv/bin/activate
+2. **Create a Virtual Environment (Optional but Recommended):**  
+   This keeps your Python packages neat and tidy:
+   ```bash
+   python3 -m venv .venv
+   # On Windows:
+   .\.venv\Scripts\activate
+   # On macOS/Linux:
+   source .venv/bin/activate
+   ```
 
-# Editable install
-pip install -e .
-```
+3. **Install the Project in Editable Mode:**
+   ```bash
+   pip install -e .
+   ```
 
-#### 3. Run the Application
+4. **Start the GUI Application:**  
+   Launch OneTXT with:
+   ```bash
+   python -m onetxt
+   ```
+   The graphical interface will open and you’re ready to go!
 
-```bash
-pip uninstall onetxt -y
-pip install -e .
 
-# Start the App
-python -m onetxt
-```
+## How to Use OneTXT
 
-This will launch the graphical interface. Boom. Simple.
+OneTXT is designed to be as user-friendly as possible. Follow these steps to convert your directory into a clean, focused text file:
 
-For more advanced usage instructions and details on how the project is structured, check out the [Usage Guide](docs/usage.md).
+1. **Select a Directory:**  
+   - Click the **"Browse"** button to choose the folder you want to convert.  
+   - The selected directory will be displayed in the input field, so you can double-check it before proceeding.
 
----
+2. **Configure Ignore Rules:**  
+   OneTXT gives you full control over which files and directories are excluded:
+   - **Use `.gitignore`/`.dockerignore`:**  
+     - Toggle the checkboxes to decide if you want to automatically apply your existing `.gitignore` and `.dockerignore` files. This helps exclude files you already don’t care about.
+   - **Predefined Presets:**  
+     - Use the **Preset** dropdown to quickly select ignore configurations for popular frameworks (e.g., React, Next.js, Django).  
+     - When you choose a preset, OneTXT automatically excludes common files and directories specific to that framework.
+   - **Custom Ignore Settings (Checkboxes):**  
+     - You’ll see a set of checkboxes for common hidden files and directories (such as `.git`, `.github`, etc.) as well as for typical clutter like `/tmp` or `/log`.  
+     - Check or uncheck these options based on what you want to include or ignore in the final output.
+   - **Additional Ignore:**  
+     - If there are files or directories that aren’t covered by the presets or checkboxes, simply type them into the **Additional Ignore** text field.  
+     - Separate multiple entries with a comma. This ensures that even niche files you want to skip will not clutter your output.
 
-## Usage
+3. **Generate Text:**  
+   - Once your settings are configured, click the **Generate txt** button.  
+   - OneTXT will process the selected directory using your specified ignore rules and compile the remaining file content into one neatly formatted text file.
 
-### 1. Select a Directory
+4. **Output Handling:**  
+   - The generated file, named `response.txt`, is saved directly in the selected directory.
+   - From the interface, you have options to:
+     - **Open the File:** Directly launch `response.txt` to view the result.
+     - **Copy to Clipboard:** Quickly copy the entire content for pasting elsewhere.
+     - **Open in VSCode:** Launch the file in Visual Studio Code if you prefer working with it there.
 
-Pick a folder that contains the files you want to process.
+With these steps, OneTXT ensures that only the most essential files are included—keeping your text output lean and ready for feeding into your LLM or for further review.
 
-### 2. Configure Ignore Rules
-
-- **Use .gitignore/.dockerignore**: Because sometimes, you just don’t want all files.
-- **Presets**: Got a React or Django project? One click, and we’ll handle the boring stuff for you.
-- **Custom Ignores**: Add additional files/folders to ignore. Because customization is life.
-
-### 3. Run the Script
-
-Click the **Generate txt** button to process the directory. The output will be saved as `response.txt` in the directory you just read from.&#x20;
-
-Yes, it's that easy.
-
-### 4. Output Handling
-
-Once the process is complete, you can:
-
-- **Open response.txt** (To go directly to your favorit LLM afterwards)
-- **Copy its content to clipboard**
-- **Open it in VSCode** (for all the fancy devs out there)
+For a deeper dive into how OneTXT works under the hood, check out our [Usage Guide](docs/usage.md).
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Fork the repo, make your changes, and submit a pull request. No red tape. Just code.
+Contributions are welcome! Fork the repo, make your changes, and submit a pull request. No red tape, just code.
 
 ---
 
 ## Support
 
-If this tool saves you hours of tedious work, consider fueling my caffeine addiction:
+You don't have to support me, but thank you for each Supporter ❤️
 
 - ☕ [Buy Me a Coffee](https://buymeacoffee.com/flameeey)
 - 💰 [Donate via PayPal](https://paypal.me/flameeey)
@@ -111,4 +132,3 @@ If this tool saves you hours of tedious work, consider fueling my caffeine addic
 ## License
 
 This project is licensed under the GNU General Public License v3. See the [LICENSE](LICENSE) file for details.
-

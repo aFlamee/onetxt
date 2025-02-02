@@ -576,11 +576,6 @@ def run_ui():
     open_button = ttk.Button(btn_frame, text="Open File", command=open_output_file, state=tk.DISABLED)
     open_button.pack(side="left", padx=5)
 
-    support_frame = ttk.Frame(main_frame)
-    support_frame.pack(fill="x", pady=(10, 0))
-    ttk.Button(support_frame, text="☕️ Buy Me a Coffee", command=open_donation_link).pack(side="right", padx=2)
-    ttk.Button(support_frame, text="🅿 PayPal", command=open_donation_link_paypal).pack(side="right", padx=2)
-
     status_label = ttk.Label(main_frame)
     status_label.pack(anchor="w", pady=(5, 0))
 
