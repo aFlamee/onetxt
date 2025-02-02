@@ -1,4 +1,5 @@
 src/onetxt/__pycache__
+src/onetxt/*/__pycache__
 /__pycache__
 .DS_Store
 

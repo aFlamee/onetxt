@@ -1,3 +1,287 @@
+
+
+=== pyproject.toml ===
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onetxt"
+version = "0.1.0"
+description = "Directory to text converter with ignore rules"
+readme = "README.md"
+requires-python = ">=3.8"
+
+
+=== setup.py ===
+from setuptools import setup, find_packages
+
+setup(
+    name="onetxt",
+    version="0.1.0",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
+    install_requires=[],
+    entry_points={
+        'console_scripts': [  
+            'onetxt=onetxt.gui.main_window:run_ui'
+        ],
+    },
+    python_requires='>=3.8',
+    include_package_data=True,
+)
+
+
+=== docs/usage.md ===
+
+
+
+=== src/onetxt/__init__.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+
+
+
+=== src/onetxt/__main__.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+from .gui.main_window import run_ui
+
+if __name__ == "__main__":
+    run_ui()
+
+
+=== src/onetxt/core/__init__.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+from .processor import *
+
+
+=== src/onetxt/core/processor.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+import os
+import fnmatch
+from ..utils.ignore_patterns import load_ignore_patterns, is_ignored_by_patterns
+
+
+def load_gitignore_patterns_from_hierarchy(current_path, base_dir, use_gitignore, use_dockerignore):
+    patterns = []
+    current_dir = os.path.dirname(current_path)
+    
+    if use_gitignore:
+        # Traverse up from current directory to base_dir
+        while True:
+            gitignore_path = os.path.join(current_dir, '.gitignore')
+            if os.path.isfile(gitignore_path):
+                patterns += load_ignore_patterns(gitignore_path)
+            
+            if current_dir == base_dir:
+                break
+            current_dir = os.path.dirname(current_dir)
+
+    if use_dockerignore:
+        # .dockerignore only in root-dir
+        dockerignore_path = os.path.join(base_dir, '.dockerignore')
+        if os.path.isfile(dockerignore_path):
+            patterns += load_ignore_patterns(dockerignore_path)
+    
+    return patterns
+
+def should_ignore(path, base_dir, user_ignores, use_gitignore, use_dockerignore):
+    ignore_patterns = user_ignores.copy()
+    
+    if use_gitignore or use_dockerignore:
+        ignore_patterns += load_gitignore_patterns_from_hierarchy(
+            path, base_dir, use_gitignore, use_dockerignore
+        )
+    
+    relative_path = os.path.relpath(path, base_dir)
+    return is_ignored_by_patterns(relative_path, ignore_patterns)
+
+def process_directory(base_dir, user_ignores, use_gitignore, use_dockerignore):
+    output = []
+    total_files = 0
+    ignored_files = 0
+    
+    for root, dirs, files in os.walk(base_dir, topdown=True):
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            if should_ignore(file_path, base_dir, user_ignores, use_gitignore, use_dockerignore):
+                ignored_files += 1
+                continue
+            
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                output.append(f"\n\n=== {os.path.relpath(file_path, base_dir)} ===\n{content}")
+                total_files += 1
+            except Exception as e:
+                continue
+        
+        dirs[:] = [d for d in dirs if not should_ignore(
+            os.path.join(root, d), 
+            base_dir, 
+            user_ignores, 
+            use_gitignore,
+            use_dockerignore
+        )]
+    
+    return {
+        'content': '\n'.join(output),
+        'stats': {
+            'total_files': total_files,
+            'ignored_files': ignored_files,
+            'total_size': len(''.join(output))
+        }
+    }
+
+def run_onetxt(base_dir, user_ignores, use_gitignore=True, use_dockerignore=True):
+    user_ignores = user_ignores.copy()
+    user_ignores.append('response.txt')
+
+    result = process_directory(base_dir, user_ignores, use_gitignore, use_dockerignore)
+    output_file = os.path.join(base_dir, 'response.txt')
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(result['content'])
+    
+    print(f"Processed {result['stats']['total_files']} files "
+          f"(ignored {result['stats']['ignored_files']})")
+    return output_file
+
+
+=== src/onetxt/utils/ignore_patterns.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+import os
+import fnmatch
+
+def load_ignore_patterns(ignore_file_path):
+    patterns = []
+    if os.path.isfile(ignore_file_path):
+        with open(ignore_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    if line.endswith('/'):
+                        line = line[:-1]
+                    patterns.append(line)
+    return patterns
+
+def is_ignored_by_patterns(relative_path, ignore_patterns):
+    for pattern in ignore_patterns:
+        if fnmatch.fnmatch(relative_path, pattern):
+            return True
+        if fnmatch.fnmatch(os.path.basename(relative_path), pattern):
+            return True
+    return False
+
+
+=== src/onetxt/utils/presets.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+PRESET_IGNORES = {
+    "No Preset": [],
+    "NextJs": [
+        "node_modules", ".next", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb"
+    ],
+    "SvelteKit": [
+        "node_modules", ".svelte-kit", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb"
+    ],
+    "React": [
+        "node_modules", "build", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb"
+    ],
+    "Ruby on Rails": [
+        "tmp", "log", "vendor", "coverage", "node_modules",
+        "Gemfile.lock", "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb", "assets", ".rubocop.yml",
+        ".ruby-version", "storage", "public/uploads", ".rspec", 
+        "config/credentials.yml.enc", "config/master.key",
+        "docker-compose.override.yml"
+    ],
+    "Angular": [
+        "node_modules", "dist", ".angular",
+        "package-lock.json", "yarn.lock",
+        "pnpm-lock.yaml", "bun.lockb",
+        "e2e", "browser", "karma.conf.js",
+        ".angular/cache", "*.ngsummary.json"
+    ],
+    "Django/Flask (Python)": [
+        "__pycache__", "*.pyc", ".venv", "venv",
+        "db.sqlite3", "migrations", ".coverage",
+        "media", "staticfiles", ".pytest_cache"
+    ],
+    "Vue.js/Nuxt": [
+        "node_modules", "dist", ".nuxt", ".output",
+        ".vuepress", "*.log", ".env.local"
+    ],
+    "Laravel (PHP)": [
+        "vendor", "node_modules", "storage/framework/cache",
+        "storage/logs", ".env", "bootstrap/cache",
+        "public/storage", "public/hot"
+    ],
+    "Go": [
+        "bin", "pkg", ".exe", "debug", "vendor",
+        "coverage.out", "*.test", ".vscode"
+    ],
+    "Android (Java/Kotlin)": [
+        "build", ".gradle", "captures", ".idea",
+        "local.properties", "*.apk", "*.aab",
+        "*.iml", "app/release"
+    ],
+    "iOS (Swift)": [
+        "Pods", "DerivedData", "*.xcworkspace",
+        "Podfile.lock", "Cartfile.resolved",
+        "fastlane/report.xml", "build"
+    ]
+}
+
+DEFAULT_IGNORE_KEYWORDS = [
+    ".github",".git","tmp", "cache", "bin", "build", "dist", "out", "logs", "README.md",
+    "node_modules", "venv", ".venv", "__pycache__", ".idea", ".vscode", ".gitignore"
+]
+
+HIDDEN_IGNORE_KEYWORDS = [
+    ".github", ".git", ".gitignore", ".idea", ".vscode", ".env",
+    ".dockerignore", ".DS_Store", ".npmignore", ".yarn", ".ruby-version",
+    ".eslintcache", ".tern-port", 
+    ".sass-cache", ".nyc_output",
+    ".cache-loader", ".babelcache",
+    ".metro-cache", ".fusebox",
+    ".history"
+]
+
+NON_HIDDEN_IGNORE_KEYWORDS = [
+    "tmp", "cache", "bin", "build", "dist", "out", "logs", "README.md",
+    "node_modules", "venv", ".venv", "__pycache__",
+    "coverage", "reports", 
+    "junit", "test-results",
+    "docker-data", "dump.rdb",
+    "*.log", "*.tmp", "*.bak",
+    "*.swp", "*.swo"
+]
+
+
+
+=== src/onetxt/utils/__init__.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+from .presets import *
+from .ignore_patterns import *
+
+
+=== src/onetxt/gui/main_window.py ===
 # Copyright (C) 2024 Flameeey
 # SPDX-License-Identifier: GPL-3.0-only
 
@@ -587,3 +871,166 @@ def run_ui():
     update_preset_label()
     switch_theme()
     root.mainloop()
+
+
+=== src/onetxt/gui/__init__.py ===
+# Copyright (C) 2024 Flameeey
+# SPDX-License-Identifier: GPL-3.0-only
+
+from .main_window import run_ui
+
+
+=== src/onetxt.egg-info/PKG-INFO ===
+Metadata-Version: 2.2
+Name: onetxt
+Version: 0.1.0
+Summary: Directory to text converter with ignore rules
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: requires-python
+
+# OneTXT - Directory to Text Converter
+
+I created OneTXT to make coding with an LLM much easier. When you provide an AI with the full source code of a project, you can get way better answers and suggestions. But manually gathering all files? Ain’t nobody got time for that! And that’s where OneTXT comes in.
+
+OneTXT is an open-source tool that converts directory structures into readable text output while respecting ignore rules (e.g., `.gitignore`, `.dockerignore`). It features a GUI for ease of use and supports predefined presets for popular frameworks like Next.js, React, Django, SvelteKit and more.
+
+## Features
+
+- **GUI-Based**: Simple and intuitive interface for selecting directories and configuring ignore rules.
+- **Ignore Patterns**: Supports `.gitignore`, `.dockerignore`, and custom ignore rules.
+- **Predefined Presets**: Quick setup for popular frameworks (React, Next.js, Django, etc.).
+- **Text Output**: Converts file content into a single text file (`response.txt`).
+- **Multi-Platform**: Runs on Windows, macOS, and Linux.
+
+---
+
+## Installation
+
+### Download the Executable (Recommended for Non-IT Users)
+
+If you're a normal user who just wants to click a button and let magic happen, you can download the latest **OneTXT.exe** from the [Releases](https://github.com/YOUR_USERNAME/onetxt/releases) section and run it directly on Windows.
+
+⚠ **Security Warning**: Your OS might panic and yell at you about an "untrusted application". This is just because the app is **not digitally signed**—not because it’s dangerous. Signing costs money, and guess what? I’d rather spend that on coffee. If you trust me, just run the app. If not, feel free to check out the code and run it manually (see below).
+
+### Manual Installation (For Developers & Advanced Users & People with trust issues)
+
+#### Prerequisites
+
+- **Python 3.8+** (Make sure `tkinter` is installed)
+
+#### 1. Clone the Repository
+
+```bash
+git clone https://github.com/aFlamee/onetxt.git
+cd onetxt
+```
+
+#### 2. Delete existing and start a new virtual environment
+
+```bash
+# Delete old virtual env
+rm -rf .venv
+
+# Create a new virtual env
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Editable install
+pip install -e .
+```
+
+#### 3. Run the Application
+
+```bash
+pip uninstall onetxt -y
+pip install -e .
+
+# Start the App
+python -m onetxt
+```
+
+This will launch the graphical interface. Boom. Simple.
+
+For more advanced usage instructions and details on how the project is structured, check out the [Usage Guide](docs/usage.md).
+
+---
+
+## Usage
+
+### 1. Select a Directory
+
+Pick a folder that contains the files you want to process.
+
+### 2. Configure Ignore Rules
+
+- **Use .gitignore/.dockerignore**: Because sometimes, you just don’t want all files.
+- **Presets**: Got a React or Django project? One click, and we’ll handle the boring stuff for you.
+- **Custom Ignores**: Add additional files/folders to ignore. Because customization is life.
+
+### 3. Run the Script
+
+Click the **Generate txt** button to process the directory. The output will be saved as `response.txt` in the directory you just read from.&#x20;
+
+Yes, it's that easy.
+
+### 4. Output Handling
+
+Once the process is complete, you can:
+
+- **Open response.txt** (To go directly to your favorit LLM afterwards)
+- **Copy its content to clipboard**
+- **Open it in VSCode** (for all the fancy devs out there)
+
+---
+
+## Contributing
+
+Contributions are welcome! Fork the repo, make your changes, and submit a pull request. No red tape. Just code.
+
+---
+
+## Support
+
+If this tool saves you hours of tedious work, consider fueling my caffeine addiction:
+
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/flameeey)
+- 💰 [Donate via PayPal](https://paypal.me/flameeey)
+
+---
+
+## License
+
+This project is licensed under the GNU General Public License v3. See the [LICENSE](LICENSE) file for details.
+
+
+
+
+=== src/onetxt.egg-info/SOURCES.txt ===
+LICENSE
+README.md
+pyproject.toml
+setup.py
+src/onetxt/__init__.py
+src/onetxt/__main__.py
+src/onetxt.egg-info/PKG-INFO
+src/onetxt.egg-info/SOURCES.txt
+src/onetxt.egg-info/dependency_links.txt
+src/onetxt.egg-info/top_level.txt
+src/onetxt/core/__init__.py
+src/onetxt/core/processor.py
+src/onetxt/gui/__init__.py
+src/onetxt/gui/main_window.py
+src/onetxt/utils/__init__.py
+src/onetxt/utils/ignore_patterns.py
+src/onetxt/utils/presets.py
+
+
+=== src/onetxt.egg-info/top_level.txt ===
+onetxt
+
+
+
+=== src/onetxt.egg-info/dependency_links.txt ===
+
